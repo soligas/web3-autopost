@@ -1,0 +1,171 @@
+{
+  "displayName": "🚀 Web3 AutoPost - Publicar en todas las redes",
+  "trigger": {
+    "name": "trigger",
+    "displayName": "📥 Recibir contenido del panel",
+    "type": "WEBHOOK",
+    "settings": {
+      "inputUiInfo": {},
+      "sampleData": {
+        "texto": "El futuro de Web3 está aquí 🚀",
+        "hashtags": "#web3 #blockchain #crypto #DeFi",
+        "redes": ["twitter", "instagram", "linkedin", "farcaster"],
+        "nivel": "todos",
+        "imagen_url": ""
+      }
+    },
+    "nextAction": "split-redes"
+  },
+  "actions": [
+    {
+      "name": "split-redes",
+      "displayName": "🔀 Dividir por red social",
+      "type": "BRANCH",
+      "settings": {
+        "conditions": [
+          {
+            "operator": "ARRAY_CONTAINS",
+            "firstValue": "{{trigger.redes}}",
+            "secondValue": "twitter"
+          }
+        ]
+      },
+      "onSuccessAction": "publicar-twitter",
+      "onFailureAction": "check-instagram"
+    },
+    {
+      "name": "publicar-twitter",
+      "displayName": "✖ Publicar en X (Twitter)",
+      "type": "PIECE",
+      "settings": {
+        "pieceName": "@activepieces/piece-twitter",
+        "pieceVersion": "latest",
+        "actionName": "create_tweet",
+        "input": {
+          "text": "{{trigger.texto}}\n\n{{trigger.hashtags}}"
+        },
+        "auth": "OAUTH2 - Solo haz clic en Conectar con X"
+      },
+      "nextAction": "check-instagram"
+    },
+    {
+      "name": "check-instagram",
+      "displayName": "📸 ¿Publicar en Instagram?",
+      "type": "BRANCH",
+      "settings": {
+        "conditions": [
+          {
+            "operator": "ARRAY_CONTAINS",
+            "firstValue": "{{trigger.redes}}",
+            "secondValue": "instagram"
+          }
+        ]
+      },
+      "onSuccessAction": "publicar-instagram",
+      "onFailureAction": "check-linkedin"
+    },
+    {
+      "name": "publicar-instagram",
+      "displayName": "📸 Publicar en Instagram",
+      "type": "PIECE",
+      "settings": {
+        "pieceName": "@activepieces/piece-instagram",
+        "pieceVersion": "latest",
+        "actionName": "create_post",
+        "input": {
+          "caption": "{{trigger.texto}}\n\n{{trigger.hashtags}}",
+          "image_url": "{{trigger.imagen_url}}"
+        },
+        "auth": "OAUTH2 - Solo haz clic en Conectar con Facebook/Instagram"
+      },
+      "nextAction": "check-linkedin"
+    },
+    {
+      "name": "check-linkedin",
+      "displayName": "💼 ¿Publicar en LinkedIn?",
+      "type": "BRANCH",
+      "settings": {
+        "conditions": [
+          {
+            "operator": "ARRAY_CONTAINS",
+            "firstValue": "{{trigger.redes}}",
+            "secondValue": "linkedin"
+          }
+        ]
+      },
+      "onSuccessAction": "publicar-linkedin",
+      "onFailureAction": "check-farcaster"
+    },
+    {
+      "name": "publicar-linkedin",
+      "displayName": "💼 Publicar en LinkedIn",
+      "type": "PIECE",
+      "settings": {
+        "pieceName": "@activepieces/piece-linkedin",
+        "pieceVersion": "latest",
+        "actionName": "create_text_post",
+        "input": {
+          "text": "{{trigger.texto}}\n\n{{trigger.hashtags}}"
+        },
+        "auth": "OAUTH2 - Solo haz clic en Conectar con LinkedIn"
+      },
+      "nextAction": "check-farcaster"
+    },
+    {
+      "name": "check-farcaster",
+      "displayName": "⬡ ¿Publicar en Farcaster?",
+      "type": "BRANCH",
+      "settings": {
+        "conditions": [
+          {
+            "operator": "ARRAY_CONTAINS",
+            "firstValue": "{{trigger.redes}}",
+            "secondValue": "farcaster"
+          }
+        ]
+      },
+      "onSuccessAction": "publicar-farcaster",
+      "onFailureAction": "confirmar"
+    },
+    {
+      "name": "publicar-farcaster",
+      "displayName": "⬡ Publicar en Farcaster (Neynar)",
+      "type": "PIECE",
+      "settings": {
+        "pieceName": "@activepieces/piece-http",
+        "pieceVersion": "latest",
+        "actionName": "send_request",
+        "input": {
+          "url": "https://api.neynar.com/v2/farcaster/cast",
+          "method": "POST",
+          "headers": {
+            "api_key": "{{connections.farcaster_api_key}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "text": "{{trigger.texto}}\n\n{{trigger.hashtags}}",
+            "signer_uuid": "{{connections.farcaster_signer_uuid}}"
+          }
+        }
+      },
+      "nextAction": "confirmar"
+    },
+    {
+      "name": "confirmar",
+      "displayName": "✅ Publicación completada",
+      "type": "PIECE",
+      "settings": {
+        "pieceName": "@activepieces/piece-webhook-response",
+        "actionName": "return_response",
+        "input": {
+          "status": 200,
+          "body": {
+            "status": "✅ Publicado exitosamente",
+            "redes": "{{trigger.redes}}",
+            "timestamp": "{{now}}"
+          }
+        }
+      }
+    }
+  ]
+}
