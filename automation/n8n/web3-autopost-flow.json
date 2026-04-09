@@ -1,0 +1,234 @@
+{
+  "name": "Web3 AutoPost - Publicar en todas las redes",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nuevo-post",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-entrada",
+      "name": "📥 Recibir Contenido",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "web3-autopost-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.redes }}",
+              "operation": "contains",
+              "value2": "twitter"
+            }
+          ]
+        }
+      },
+      "id": "check-twitter",
+      "name": "¿Publicar en X?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.texto }}\n\n{{ $json.hashtags }}",
+        "additionalFields": {}
+      },
+      "id": "twitter-post",
+      "name": "✖ Publicar en X (Twitter)",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 1,
+      "position": [750, 100],
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "twitter-cred",
+          "name": "Twitter OAuth2 - CONECTAR CON UN CLIC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.redes }}",
+              "operation": "contains",
+              "value2": "instagram"
+            }
+          ]
+        }
+      },
+      "id": "check-instagram",
+      "name": "¿Publicar en Instagram?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "operation": "createPost",
+        "pageId": "={{ $credentials.pageId }}",
+        "message": "={{ $json.texto }}\n\n{{ $json.hashtags }}",
+        "additionalFields": {
+          "link": "={{ $json.url_imagen }}"
+        }
+      },
+      "id": "instagram-post",
+      "name": "📸 Publicar en Instagram",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [750, 400],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "meta-cred",
+          "name": "Meta (Instagram/Facebook) - CONECTAR CON UN CLIC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.redes }}",
+              "operation": "contains",
+              "value2": "linkedin"
+            }
+          ]
+        }
+      },
+      "id": "check-linkedin",
+      "name": "¿Publicar en LinkedIn?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 600]
+    },
+    {
+      "parameters": {
+        "person": "={{ $credentials.personUrn }}",
+        "text": "={{ $json.texto }}\n\n{{ $json.hashtags }}",
+        "additionalFields": {}
+      },
+      "id": "linkedin-post",
+      "name": "💼 Publicar en LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [750, 600],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "linkedin-cred",
+          "name": "LinkedIn OAuth2 - CONECTAR CON UN CLIC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.redes }}",
+              "operation": "contains",
+              "value2": "farcaster"
+            }
+          ]
+        }
+      },
+      "id": "check-farcaster",
+      "name": "¿Publicar en Farcaster?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 800]
+    },
+    {
+      "parameters": {
+        "url": "https://api.neynar.com/v2/farcaster/cast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "={{ $json.texto }}\n\n{{ $json.hashtags }}" },
+            { "name": "signer_uuid", "value": "={{ $credentials.signerUuid }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "farcaster-post",
+      "name": "⬡ Publicar en Farcaster",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [750, 800],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "farcaster-cred",
+          "name": "Farcaster (Neynar) API Key - PEGAR KEY GRATIS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.lens.xyz/post",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "content", "value": "={{ $json.texto }}\n\n{{ $json.hashtags }}" },
+            { "name": "profileId", "value": "={{ $credentials.lensProfileId }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "lens-post",
+      "name": "🌿 Publicar en Lens Protocol",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [750, 1000],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lens-cred",
+          "name": "Lens Protocol - CONECTAR WALLET"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"✅ Publicado en todas las redes\", \"timestamp\": \"{{ $now }}\"}" 
+      },
+      "id": "respuesta-final",
+      "name": "✅ Confirmar publicación",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1000, 500]
+    }
+  ],
+  "connections": {
+    "📥 Recibir Contenido": {
+      "main": [[{ "node": "¿Publicar en X?", "type": "main", "index": 0 }, { "node": "¿Publicar en Instagram?", "type": "main", "index": 0 }, { "node": "¿Publicar en LinkedIn?", "type": "main", "index": 0 }, { "node": "¿Publicar en Farcaster?", "type": "main", "index": 0 }]]
+    },
+    "¿Publicar en X?": {
+      "main": [[{ "node": "✖ Publicar en X (Twitter)", "type": "main", "index": 0 }], []]
+    },
+    "¿Publicar en Instagram?": {
+      "main": [[{ "node": "📸 Publicar en Instagram", "type": "main", "index": 0 }], []]
+    },
+    "¿Publicar en LinkedIn?": {
+      "main": [[{ "node": "💼 Publicar en LinkedIn", "type": "main", "index": 0 }], []]
+    },
+    "¿Publicar en Farcaster?": {
+      "main": [[{ "node": "⬡ Publicar en Farcaster", "type": "main", "index": 0 }], []]
+    },
+    "✖ Publicar en X (Twitter)": { "main": [[{ "node": "✅ Confirmar publicación", "type": "main", "index": 0 }]] },
+    "📸 Publicar en Instagram": { "main": [[{ "node": "✅ Confirmar publicación", "type": "main", "index": 0 }]] },
+    "💼 Publicar en LinkedIn": { "main": [[{ "node": "✅ Confirmar publicación", "type": "main", "index": 0 }]] },
+    "⬡ Publicar en Farcaster": { "main": [[{ "node": "✅ Confirmar publicación", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
